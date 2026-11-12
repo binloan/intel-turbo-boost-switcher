@@ -1,0 +1,13 @@
+{
+  "msrUtility": {
+    "version": "20230811",
+    "source": "https://github.com/cocafe/msr-utility",
+    "url": "https://github.com/cocafe/msr-utility/releases/download/20230811/msr-cmd_mingw.7z",
+    "sha256": "67F1F98CEB01770830649540E685C5CDD8336610341E17684E5D4E122210B70C",
+    "files": {
+      "msr-cmd.exe": "39397CFC1E61A33DF55529614BF3ED05C8E3894BDF5F4B86FEE7AAC658B01BAB",
+      "WinRing0x64.dll": "7E07F66CF41CAC81B1DAE4C5FBC218A98C98FC84B18AC20CAEC7EF6CDF7E250C",
+      "WinRing0x64.sys": "11BD2C9F9E2397C9A16E0990E4ED2CF0679498FE0FD418A3DFDAC60B5C160EE5"
+    }
+  }
+}
