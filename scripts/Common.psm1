@@ -351,8 +351,14 @@ function New-UninstallEntry {
         InstallDate     = (Get-Date -Format 'yyyyMMdd')
     }
     foreach ($name in $strings.Keys) {
-        $null = New-ItemProperty -LiteralPath $KeyPath -Name $name -Value $strings[$name] `
-            -PropertyType String -Force
+        $propertyParameters = @{
+            LiteralPath  = $KeyPath
+            Name         = $name
+            Value        = $strings[$name]
+            PropertyType = 'String'
+            Force        = $true
+        }
+        $null = New-ItemProperty @propertyParameters
     }
 
     foreach ($name in 'NoModify', 'NoRepair') {
@@ -802,4 +808,132 @@ function Test-RecordedBuild {
 }
 
 
-Export-ModuleMember -Function *
+$script:StepOpen = $false
+
+
+function Write-Step {
+    <#
+    .SYNOPSIS
+        Starts a one-line progress step: "  Checking processor ... ".
+    .DESCRIPTION
+        Finish the line with Write-StepResult. If the step fails instead, Write-StepFailure
+        finishes the line. Details belong in Write-Verbose, not on this line. When the caller
+        runs with -Verbose, the step line ends at once and the result goes on its own line,
+        so verbose messages do not land in the middle of the step line.
+    .EXAMPLE
+        Write-Step -Message 'Checking processor'
+    #>
+    [CmdletBinding()]
+    param (
+        # What the step does, as a short phrase without a trailing period.
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Message
+    )
+
+    $isVerbose = $PSCmdlet.GetVariableValue('VerbosePreference') -eq 'Continue'
+    if ($isVerbose) {
+        Write-Host -Object "  $Message ..."
+    } else {
+        Write-Host -Object "  $Message ... " -NoNewline
+    }
+    $script:StepOpen = $true
+}
+
+
+function Write-StepResult {
+    <#
+    .SYNOPSIS
+        Finishes the step started by Write-Step with a short result.
+    .EXAMPLE
+        Write-StepResult -Detail 'Intel Core i5-12450H, 12 logical processors'
+    #>
+    [CmdletBinding()]
+    param (
+        # The outcome. OK is green, Skipped is gray.
+        [ValidateSet('OK', 'Skipped')]
+        [string]
+        $Status = 'OK',
+
+        # A short result shown in parentheses after the status. Leave empty for none.
+        [string]
+        $Detail
+    )
+
+    $color = if ($Status -eq 'OK') { 'Green' } else { 'DarkGray' }
+    $text = if ($Detail) { "$Status ($Detail)" } else { $Status }
+    if ($PSCmdlet.GetVariableValue('VerbosePreference') -eq 'Continue') {
+        $text = "  ... $text"
+    }
+    Write-Host -Object $text -ForegroundColor $color
+    $script:StepOpen = $false
+}
+
+
+function Write-StepFailure {
+    <#
+    .SYNOPSIS
+        Reports a failure. Finishes an open step with FAILED, then prints the message in red.
+    .EXAMPLE
+        Write-StepFailure -Message $_.Exception.Message
+    .EXAMPLE
+        Write-StepFailure -Message '' -NoMessage
+    #>
+    [CmdletBinding()]
+    param (
+        # The failure message. An empty message is reported as an unknown failure.
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]
+        $Message,
+
+        # Only finishes an open step with FAILED. Use it when the caller prints the message itself.
+        [switch]
+        $NoMessage
+    )
+
+    if ($script:StepOpen) {
+        $isVerbose = $PSCmdlet.GetVariableValue('VerbosePreference') -eq 'Continue'
+        $failed = if ($isVerbose) { '  ... FAILED' } else { 'FAILED' }
+        Write-Host -Object $failed -ForegroundColor Red
+        $script:StepOpen = $false
+    }
+    if ($NoMessage) {
+        return
+    }
+    $text = if ($Message) { $Message } else { 'Unknown failure.' }
+    Write-Host -Object $text -ForegroundColor Red
+}
+
+
+function Get-TurboSummary {
+    <#
+    .SYNOPSIS
+        Describes the Turbo state of the processor rows in one short sentence.
+    .EXAMPLE
+        Get-TurboSummary -Row (Read-TurboState -Runner $runner -ExpectedCount 12)
+    .OUTPUTS
+        System.String
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        # The rows returned by Read-TurboState or Set-TurboState.
+        [Parameter(Mandatory = $true)]
+        [object[]]
+        $Row
+    )
+
+    $disabled = @($Row | Where-Object -FilterScript { $_.DisableBit -eq 1 }).Count
+    $total = $Row.Count
+    if ($disabled -eq 0) {
+        "Turbo is enabled on all $total logical processors."
+    } elseif ($disabled -eq $total) {
+        "Turbo is disabled on all $total logical processors."
+    } else {
+        "Turbo is mixed: enabled on $($total - $disabled) and disabled on $disabled of $total logical processors."
+    }
+}
+
+
+Export-ModuleMember -Function * -Verbose:$false

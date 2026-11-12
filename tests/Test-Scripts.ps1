@@ -234,6 +234,65 @@ function Assert-Dependencies {
 }
 
 
+function Write-Step {
+    <#
+    .SYNOPSIS
+        Does nothing; the real helper prints a step line.
+    #>
+    param (
+        # The step text, ignored.
+        [string]
+        $Message
+    )
+}
+
+
+function Write-StepResult {
+    <#
+    .SYNOPSIS
+        Does nothing; the real helper prints a step result.
+    #>
+    param (
+        # The result status, ignored.
+        [string]
+        $Status = 'OK',
+
+        # The result detail, ignored.
+        [string]
+        $Detail
+    )
+}
+
+
+function Write-StepFailure {
+    <#
+    .SYNOPSIS
+        Prints the failure message so it stays visible in the test output.
+    #>
+    param (
+        # The failure message.
+        [string]
+        $Message
+    )
+
+    Write-Host -Object $Message
+}
+
+
+function Get-TurboSummary {
+    <#
+    .SYNOPSIS
+        Returns a fixed summary instead of reading the register row.
+    #>
+    param (
+        # The register row, ignored.
+        $Row
+    )
+
+    'Turbo summary (stub).'
+}
+
+
 Export-ModuleMember -Function *
 '@
 $stubDependencies = @'

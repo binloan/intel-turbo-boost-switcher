@@ -73,6 +73,14 @@ change. To switch later, set `"RetryOnFailure"` to `true` or `false` there and r
 `Restart-Service ITBS`. When retrying is off and an attempt fails, the status shows
 the error; fix the cause and run `Restart-Service ITBS`.
 
+By default the installer prints a title, a short list of steps with their results, and
+a short outcome. Add `-Verbose` to also see the details: paths, hashes, compiler
+arguments and test output.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1 -Verbose
+```
+
 Check that it worked:
 
 ```powershell
@@ -80,8 +88,10 @@ Get-Service ITBS
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ITBS.ps1 -Mode Read
 ```
 
-`DisableBit 0` on every processor means Turbo is permitted. To remove the service,
-see [Uninstall](#uninstall). To reinstall, uninstall first.
+`ITBS.ps1 -Mode Read` prints a sentence such as "Turbo is enabled on all N logical
+processors." Add `-Verbose` to also see the per-processor `DisableBit` table (0 means
+Turbo is permitted). To remove the service, see [Uninstall](#uninstall). To reinstall,
+uninstall first.
 
 Upgrading from an early pre-release build that used the old name `StopThrottle`? The
 installer detects it and stops with the commands to remove it. It never deletes it for you.
@@ -98,6 +108,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ITBS.ps1 -Mode Disable
 
 On an untested CPU it prints the warning when it opens and asks for `YES` (or
 `-AcceptUntestedRisk`) before the first write.
+
+Like the installer, it prints a short list of steps with results. Add `-Verbose` to
+also see the register table and engine details.
 
 Manual writes refuse to run while the ITBS service or another recognized
 tuning tool is active. For an A/B test, stop the service.
@@ -218,6 +231,8 @@ These commands are for development only.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 # Fetch the pinned archive again; the expected hashes do not change.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -RefreshDownloads
+# Also show paths, hashes, compiler arguments and test output.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Verbose
 ```
 
 ## License

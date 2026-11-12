@@ -272,6 +272,13 @@ function Get-Example {
 - Output one object type at a time. Never mix strings with objects.
 - Use format files (`.format.ps1xml`) for display formatting. Do not put `Format-*` commands inside functions.
 
+Scripts in this project keep their default output short:
+
+- Print a title line, then one line per step with `Write-Step`, `Write-StepResult` and `Write-StepFailure` from `scripts\Common.psm1`, and finish with a short outcome.
+- Send details (paths, hashes, command lines, tool output) to `Write-Verbose` in scripts, so `-Verbose` shows them. Do not call it inside modules: a module does not inherit the caller's `$VerbosePreference`.
+- Never print anything between `Write-Step` and its `Write-StepResult`.
+- Safety warnings and prompts stay always visible. `-Verbose` must not be needed to see them.
+
 ### 4.7 Error handling
 
 - Use `-ErrorAction Stop` on cmdlets when you intend to catch errors.

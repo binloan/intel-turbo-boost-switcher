@@ -17,7 +17,7 @@ param ()
 
 Set-StrictMode -Version 2
 $ErrorActionPreference = 'Stop'
-Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath '..\scripts\Common.psm1') -Force
+Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath '..\scripts\Common.psm1') -Force -Verbose:$false
 $script:checks = 0
 
 # All register bits except bit 38 (274877906944 is 1 shifted left by 38).

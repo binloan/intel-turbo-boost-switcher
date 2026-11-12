@@ -6,7 +6,8 @@
     missing, and verifies the archive SHA-256 hash. It then checks the archive members, extracts the files
     that are missing or invalid with the Windows tar.exe, and verifies the SHA-256 hash of every extracted
     file. Redirected (reparse point) cache and payload locations are refused.
-    Only the resolved engine directory is written to the success stream.
+    Only the resolved engine directory is written to the success stream. Details are written to the verbose
+    stream, so callers print their own progress and pass -Verbose to see them.
 .PARAMETER RefreshDownloads
     Downloads the pinned archive again even when a cached copy exists.
 .EXAMPLE
@@ -73,13 +74,16 @@ New-Item -ItemType Directory -Path $cache, $payload -Force | Out-Null
 
 if ($RefreshDownloads -or -not (Test-Path -LiteralPath $archive)) {
     $download = $archive + '.download'
-    Write-Host -Object ('Downloading pinned msr-utility release ' + $dependency.version)
+    Write-Verbose -Message ('Downloading pinned msr-utility release ' + $dependency.version)
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     Invoke-WebRequest -UseBasicParsing -Uri $dependency.url -OutFile $download
     Assert-Hash -Path $download -Expected $dependency.sha256
     Move-Item -LiteralPath $download -Destination $archive -Force
+} else {
+    Write-Verbose -Message "Using cached archive: $archive"
 }
 Assert-Hash -Path $archive -Expected $dependency.sha256
+Write-Verbose -Message 'Archive hash verified.'
 
 $tar = Join-Path -Path $env:SystemRoot -ChildPath 'System32\tar.exe'
 $members = @(& $tar -tf $archive)
@@ -92,6 +96,7 @@ $expectedList = $expectedFiles -join ','
 if ($memberList -cne $expectedList) {
     throw 'Unexpected archive members; refusing extraction.'
 }
+Write-Verbose -Message "Archive members verified: $($expectedFiles.Count) files."
 foreach ($name in $expectedFiles) {
     $path = Join-Path -Path $payload -ChildPath $name
     $isRedirected = (Test-Path -LiteralPath $path) -and
@@ -109,7 +114,10 @@ foreach ($file in $dependency.files.PSObject.Properties) {
         $valid = $false
     }
 }
-if (-not $valid) {
+if ($valid) {
+    Write-Verbose -Message 'Using cached payload.'
+} else {
+    Write-Verbose -Message "Extracting $($expectedFiles.Count) files to $payload"
     & $tar -xf $archive -C $payload
     if ($LASTEXITCODE -ne 0) {
         throw 'Dependency extraction failed.'
@@ -118,6 +126,7 @@ if (-not $valid) {
 foreach ($file in $dependency.files.PSObject.Properties) {
     Assert-Hash -Path (Join-Path -Path $payload -ChildPath $file.Name) -Expected $file.Value
 }
+Write-Verbose -Message 'Payload hashes verified.'
 
 # Return only the resolved engine directory on the success stream.
 (Resolve-Path -LiteralPath $payload).Path
