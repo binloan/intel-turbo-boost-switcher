@@ -13,9 +13,11 @@ namespace ITBS
         {
             if (args.Length != 1 || args[0] != "--service" || Environment.UserInteractive)
             {
-                Console.Error.WriteLine("This locally compiled program is a Windows service. Use Install.ps1 or ITBS.ps1.");
+                Console.Error.WriteLine(
+                    "This locally compiled program is a Windows service. Use Install.ps1 or ITBS.ps1.");
                 return 1;
             }
+
             ServiceBase.Run(new ServiceHost());
             return 0;
         }
